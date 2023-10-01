@@ -1,0 +1,91 @@
+---
+title: "Question 2 of Data Science project for R"
+author: "Marcus Ting En Hao"
+date: "31th March 2023"
+---
+Load libraries
+```{r}
+library(DBI)
+library(dplyr)
+```
+Set working directory
+```{r}
+setwd("C:/Users/xavie/OneDrive/Desktop/Rstudio files")
+```
+Load data of 2007, 2008 and planes
+```{r}
+planes <- read.csv("plane-data.csv", header = TRUE)
+data7 <- read.csv("2007.csv")
+data8 <- read.csv("2008.csv")
+```
+Combine data 2007 and 2008 into 1 single dataframe
+```{r}
+data78 <- rbind(data7, data8)
+```
+Create a data base. If already exist, delete it
+```{r}
+if (file.exists("Airdata20072008.db")) 
+  file.remove("Airdata20072008.db")
+```
+Connect to database
+```{r}
+conn <- dbConnect(RSQLite::SQLite(), "Airdata20072008.db")
+```
+Load data into database
+```{r}
+dbWriteTable(conn, "planedata", planes)
+dbWriteTable(conn, "data78", data78)
+```
+Getting the average delay of oldest model
+```{r}
+q4 <-dbGetQuery(conn,
+                "SELECT model AS model, AVG(data78.DepDelay+data78.ArrDelay+data78.CarrierDelay+data78.WeatherDelay+data78.NASDelay+data78.SecurityDelay+data78.LateAircraftDelay) AS avg_delay, planedata.year AS year
+FROM planedata JOIN data78 USING(tailnum)
+WHERE data78.Cancelled = 0 AND data78.Diverted = 0 AND planedata.year > 0 
+GROUP BY model
+ORDER BY year")           
+```
+
+Getting the average delay of newest model
+
+```{r}
+q5 <-dbGetQuery(conn,
+                "SELECT model AS model, AVG(data78.DepDelay+data78.ArrDelay+data78.CarrierDelay+data78.WeatherDelay+data78.NASDelay+data78.SecurityDelay+data78.LateAircraftDelay) AS avg_delay, planedata.year AS year
+FROM planedata JOIN data78 USING(tailnum)
+WHERE data78.Cancelled = 0 AND data78.Diverted = 0 AND planedata.year > 0 AND planedata.year != 'None'
+GROUP BY model
+ORDER BY year DESC") 
+```
+Put new Queries into buckets
+```{r}
+oldmodel=paste(q4[1, "model"])
+newmodel=paste(q5[1, "model"])
+```
+Changing Queries into str
+```{r}
+oldavgdelaystring=paste(q4[1,"avg_delay"])
+newavgdelaystring=paste(q5[1,"avg_delay"])
+```
+Converting avgdelays into numeric for more than/less than
+```{r}
+oldavgdelay=as.numeric(oldavgdelaystring)
+newavgdelay=as.numeric(newavgdelaystring)
+
+```
+Setting the conditional
+```{r}
+if(oldavgdelay>newavgdelay){
+  answerq4q5 = TRUE
+}else {answerq4q5 = FALSE
+}
+```
+Answer for question 2
+```{r}
+message("The oldest plane model, which is the " ,oldmodel, ", has an average delay of ", oldavgdelay, 
+        ", while the newest plane model, which is the ", newmodel, ", has an average delay of ", newavgdelay, 
+        ". Therefore we can conclude that with the given data, the statement of 'older planes suffer more delays' to be ", answerq4q5)
+```
+
+
+
+

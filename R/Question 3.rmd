@@ -1,0 +1,53 @@
+---
+title: "Question 3 of Data Science project for R"
+author: "Marcus Ting En Hao"
+date: "31th March 2023"
+---
+Load libraries
+```{r}
+library(DBI)
+library(dplyr)
+library(ggplot2)
+
+```
+set working directory
+```{r}
+setwd("C:/Users/xavie/OneDrive/Desktop/Rstudio files")
+```
+Load data of 2007, 2008
+```{r}
+data7 <- read.csv("2007.csv")
+data8 <- read.csv("2008.csv")
+```
+Create a data base. If already exist, delete it
+```{r}
+if (file.exists("Airdata20072008.db")) 
+  file.remove("Airdata20072008.db")
+```
+Connect to database
+```{r}
+conn <- dbConnect(RSQLite::SQLite(), "Airdata20072008.db")
+```
+Load data into database
+```{r}
+dbWriteTable(conn, "data8", data8)
+dbWriteTable(conn, "data7", data7)
+```
+Histogram of 2007
+```{r}
+ggplot(data7, aes(x=Month)) + 
+  geom_histogram(fill="grey", bins=12, na.rm = TRUE) + 
+  ggtitle("Number of flights each month throughout 2007") +
+  scale_y_continuous(name="Number of flights", labels = scales::comma) 
+
+```
+
+Histogram of 2008
+```{r}
+ggplot(data8, aes(x=Month)) + 
+  geom_histogram(fill="grey", bins=4, na.rm = TRUE) + 
+  ggtitle("Number of flights each month throughout 2008") +
+  scale_y_continuous(name="Number of flights", labels = scales::comma)
+```
+
+

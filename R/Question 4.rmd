@@ -1,0 +1,59 @@
+---
+title: "Question 4 of Data Science project for R"
+author: "Marcus Ting En Hao"
+date: "31th March 2023"
+---
+Load libraries
+```{r}
+library(DBI)
+library(dplyr)
+library(ggplot2)
+```
+set working directory
+```{r}
+setwd("C:/Users/xavie/OneDrive/Desktop/Rstudio files")
+```
+load data of 2007
+```{r}
+data7 <- read.csv("2007.csv")
+```
+Create a data base. If already exist, delete it
+```{r}
+if (file.exists("Airdata20072008.db")) 
+  file.remove("Airdata20072008.db")
+```
+Connect to database
+```{r}
+conn <- dbConnect(RSQLite::SQLite(), "Airdata20072008.db")
+```
+load data into database
+```{r}
+dbWriteTable(conn, "data7", data7)
+```
+
+Create new column for total delay
+```{r}
+data7$Totaldelay<-with(data7, paste0(DepDelay+ArrDelay+CarrierDelay+WeatherDelay+NASDelay+SecurityDelay+LateAircraftDelay))
+```
+Create new column for True false delay
+```{r}
+data7$TFSTRING[data7$Totaldelay > 0] <- 1
+data7$TFSTRING[data7$Totaldelay <= 0] <- 0
+```
+Update data into January only
+```{r}
+data7 <- subset(data7, Month <2)
+```
+Update True False to only True
+```{r}
+data7 <- subset(data7,TFSTRING <1)
+```
+Histrogram of number of delayed flight throughout January
+```{r}
+ggplot(data7, aes(x=DayofMonth)) + 
+  geom_histogram(fill="steelblue", bins=31, na.rm = TRUE) + 
+  ggtitle("Distribution of Delayed flights each Day") +
+  scale_y_continuous(name="Number of Delayed flights in January", labels = scales::comma) 
+```
+
+

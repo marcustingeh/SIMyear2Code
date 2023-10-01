@@ -1,0 +1,88 @@
+---
+title: "Question 5 of Data Science project for R"
+author: "Marcus Ting En Hao"
+date: "31th March 2023"
+---
+Load libraries
+```{r}
+library(mlr3)
+library(mlr3learners)
+library(mlr3pipelines)
+library(mlr3tuning)
+```
+set working directory
+```{r}
+setwd("C:/Users/xavie/OneDrive/Desktop/Rstudio files")
+```
+load data of 2007
+```{r}
+data7 <- read.csv("2007.csv")
+```
+Create new column for total delay
+```{r}
+data7$Totaldelay<-with(data7, paste0(DepDelay+ArrDelay+CarrierDelay+WeatherDelay+NASDelay+SecurityDelay+LateAircraftDelay))
+```
+Create new column for True false delay
+```{r}
+data7$TFSTRING[data7$Totaldelay > 0] <- 1
+data7$TFSTRING[data7$Totaldelay <= 0] <- 0
+```
+Update data into January and February only
+```{r}
+data7 <- subset(data7, Month <3)
+```
+
+Update to remove rows if Diverted and Cancelled flights are True
+```{r}
+data7 <- subset(data7,Diverted = 1)
+data7 <- subset(data7,Cancelled = 1)
+```
+Update to remove columns that are irrelevant to the question
+```{r}
+data7cut <- data7[,-c(1,5,7,10,12,14,15,16,19,20,21,23,25,26,27,28,29)]
+```
+Question 5
+Changing important columns into factors
+```{r}
+data7cut$Month <- factor(data7cut$Month, order = TRUE, levels = c(1,2))
+data7cut$Origin <- factor(data7cut$Origin)
+data7cut$DayofMonth <- factor(data7cut$DayofMonth)
+data7cut$TFSTRING <- factor(data7cut$TFSTRING)
+data7cut$UniqueCarrier<- factor(data7cut$UniqueCarrier)
+```
+Creating the training and Testing sets
+```{r}
+n <- nrow(data7cut)
+training_set <- sample(n, round(0.5*n))
+testing_set <-setdiff(1:n, training_set)
+```
+Creating the task
+```{r}
+task <- TaskClassif$new('data7cut', backend=data7cut, target = 'TFSTRING')
+task$select(c('Origin', 'DayofMonth', 'UniqueCarrier'))
+measure <- msr('classif.ce')
+```
+Creating the conversions if data does not accept factors
+```{r}
+fencoder <-po("encode", method = "treatment",
+               affect_columns = selector_type("factor"))
+ord_to_int<- po("colapply", applicator = as.integer,
+                 affect_columns = selector_type("ordered"))
+```
+Creating hyperparameters
+```{r}
+tuner <-tnr('grid_search')
+terminator <-trm('evals', n_evals = 20)
+```
+Logistic regression
+```{r}
+learner_lr <- lrn("classif.log_reg")
+gc_lr <- po('imputemean') %>>%
+  po(learner_lr)
+glrn_lr<- GraphLearner$new(gc_lr)
+
+glrn_lr$train(task, row_ids = training_set)
+glrn_lr$predict(task, row_ids = testing_set)$score() 
+```
+
+

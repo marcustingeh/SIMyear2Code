@@ -1,0 +1,100 @@
+---
+title: "Question 1 of Data Science project for R"
+author: "Marcus Ting En Hao"
+date: "31th March 2023"
+---
+
+Load libraries
+```{r}
+library(DBI)
+library(dplyr)
+```
+
+Set working directory
+
+```{r}
+setwd("C:/Users/xavie/OneDrive/Desktop/Rstudio files")
+```
+
+Load data of 2007 and 2008
+
+```{r}
+data7 <- read.csv("2007.csv")
+data8 <- read.csv("2008.csv")
+```
+
+Create a data base. If already exist, delete it
+
+```{r}
+if (file.exists("Airdata20072008.db")) 
+  file.remove("Airdata20072008.db")
+```
+Connect to the database
+```{r}
+conn <- dbConnect(RSQLite::SQLite(), "Airdata20072008.db")
+```
+Combine data 2007 and 2008 into 1 single dataframe
+```{r}
+data78 <- rbind(data7, data8)
+```
+
+Load the data into the database
+
+```{r}
+dbWriteTable(conn, "data78", data78)
+```
+
+Question 1 Best time of day to fly with minimal delay
+
+```{r}
+q1 <- dbGetQuery(conn, 
+                 "SELECT deptime AS deptime, AVG(data78.DepDelay+data78.ArrDelay+data78.CarrierDelay+data78.WeatherDelay+data78.NASDelay+data78.SecurityDelay+data78.LateAircraftDelay) AS avg_delay
+FROM data78
+WHERE data78.Cancelled = 0 AND data78.Diverted = 0 
+GROUP BY deptime
+ORDER BY avg_delay")
+```
+
+Answer of Best time of day to fly with minimal delay
+
+```{r}
+print(paste(q1[1, "deptime"], "hrs is the best time of day to fly with minimal delay."))
+```
+
+Best day of the week to fly with minimal delay
+
+```{r}
+q2 <-dbGetQuery(conn,
+                "SELECT dayofweek AS dayofweek, AVG(data78.DepDelay+data78.ArrDelay+data78.CarrierDelay+data78.WeatherDelay+data78.NASDelay+data78.SecurityDelay+data78.LateAircraftDelay) AS avg_delay
+FROM data78
+ WHERE data78.Cancelled = 0 AND data78.Diverted = 0 
+GROUP BY dayofweek
+ORDER BY avg_delay")
+```
+
+Answer of Best day of the week to fly with minimal delay
+
+```{r}
+print(paste(q2[1, "dayofweek"], "is the best day of the week to fly with minimal delay."))
+```
+
+Best year to fly with minimal delay
+
+```{r}
+q3 <-dbGetQuery(conn,
+                "SELECT year AS year, AVG(data78.DepDelay+data78.ArrDelay+data78.CarrierDelay+data78.WeatherDelay+data78.NASDelay+data78.SecurityDelay+data78.LateAircraftDelay) AS avg_delay
+FROM data78
+ WHERE data78.Cancelled = 0 AND data78.Diverted = 0 
+GROUP BY year
+ORDER BY avg_delay")
+```
+
+Answer of Best year to fly with minimal delay
+
+```{r}
+print(paste(q3[1, "year"], "is the best year to fly with minimal delay."))
+
+```
+
+
+
